@@ -1,0 +1,42 @@
+experiment_name: mvtec_capsule_dinov2
+output_dir: ./outputs
+device: auto
+seed: 42
+
+data:
+  dataset_name: mvtec
+  data_root: ./data
+  normal_class: capsule
+  val_fraction: 0.1
+  num_workers: 4
+  mvtec_img_size: 224
+
+teacher:
+  kind: timm
+  pretrained: true
+  timm_model: vit_small_patch14_dinov2.lvd142m
+  feature_layers: [2, 5, 8, 11]
+
+student:
+  equal_size: false
+  use_bias: false
+
+train:
+  num_epochs: 200
+  batch_size: 16
+  learning_rate: 1.0e-3
+  weight_decay: 0.0
+  lamda: 0.5
+  direction_loss_only: false
+  amp: true
+  cache_teacher: true
+  resume: null
+  log_every: 10
+  val_every: 5
+  ckpt_every: 50
+
+eval:
+  localization: true
+  localization_method: feature_dist
+  smooth_grad_n: 25
+  smooth_grad_sigma: 0.05

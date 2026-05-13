@@ -1,0 +1,50 @@
+# =====================================================================
+# Student-Teacher Anomaly Detection — Configuration
+# =====================================================================
+
+experiment_name: mnist_v2
+output_dir: ./outputs
+device: auto                # auto | cuda | mps | cpu
+seed: 42
+
+# ---------- Data ----------
+data:
+  dataset_name: mnist       # mnist | fashionmnist | cifar10 | mvtec
+  data_root: ./data
+  normal_class: 3           # int for mnist/fmnist/cifar10; str (e.g. "capsule") for mvtec
+  val_fraction: 0.1         # carve val out of train (anti-leakage)
+  num_workers: 4
+  mvtec_img_size: 256
+
+# ---------- Networks ----------
+teacher:
+  kind: vgg16               # vgg16 | timm
+  pretrained: true
+  timm_model: vit_small_patch14_dinov2.lvd142m   # only used when kind=timm
+  feature_layers: [3, 6, 9, 12]                  # which intermediate layers to compare
+
+student:
+  equal_size: false         # false → small "cloner"; true → full-size mirror
+  use_bias: false
+
+# ---------- Training ----------
+train:
+  num_epochs: 51            # mnist/fmnist:51, cifar10:201, mvtec:601
+  batch_size: 32
+  learning_rate: 1.0e-3
+  weight_decay: 0.0
+  lamda: 0.05               # mvtec:0.5, others:0.05
+  direction_loss_only: false
+  amp: true                 # automatic mixed precision
+  cache_teacher: false      # pre-compute teacher features (memory-heavy but fast)
+  resume: null              # path to checkpoint to resume from
+  log_every: 10
+  val_every: 1              # epochs between validation runs
+  ckpt_every: 50            # epochs between periodic checkpoints
+
+# ---------- Evaluation ----------
+eval:
+  localization: false                # true → pixel-level (mvtec only)
+  localization_method: feature_dist  # feature_dist | smooth_grad | gbp | gradients
+  smooth_grad_n: 25
+  smooth_grad_sigma: 0.05

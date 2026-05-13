@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Project artifacts
+outputs/
+data/
+*.pth
+*.pt
+*.pickle
+*.ckpt
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# TensorBoard
+runs/
+events.out.tfevents.*
