@@ -8,7 +8,7 @@ venv/
 
 # Project artifacts
 outputs/
-data/
+dataset/
 *.pth
 *.pt
 *.pickle
