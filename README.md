@@ -5,50 +5,6 @@ knowledge distillation model: an end-to-end effective anomaly detection model
 for real-time industrial applications"* (Rakhmonov et al., 2023). This is a
 reorganized rewrite of the original repository with the following changes.
 
-## What changed vs. the original
-
-### Tier 1 — Runs on a modern stack
-- VGG16 loaded via the modern `weights=` API (no broken pickle path).
-- All `Image.ANTIALIAS`, `Variable`, deprecated hook calls, and `xavier_uniform`
-  references replaced.
-- CPU / CUDA / MPS auto-selection (`device: auto`); no more hard-coded `.cuda()`.
-- `requirements.txt` pinned to PyTorch ≥ 2.1, scikit-learn (real package),
-  scipy ≥ 1.11, Pillow ≥ 10.
-
-### Tier 2 — Reproducible & honest evaluation
-- Global seeding (`torch`, `numpy`, `random`, cudnn deterministic).
-- Proper **train / validation / test split** — validation is held out from the
-  normal-class training set; the test set is no longer touched during training.
-- Best-checkpoint selection by validation AUROC (`best.pth`).
-- **TensorBoard** logging plus a structured Python logger writing to
-  `outputs/<exp>/logs/run.log`.
-
-### Tier 3 — Better model & evaluation primitives
-- Optional **DINOv2 / timm teacher** (`teacher.kind: timm`) — drop in
-  `vit_small_patch14_dinov2.lvd142m` or any other timm backbone.
-- Configurable feature-layer indices for the loss.
-- **Feature-distance localization** as the new default — per-pixel student/teacher
-  feature MSE upsampled to image size, no gradient attribution required.
-  Faster and denser than the original Smooth-Grad / GBP, which are still
-  available for parity.
-- **Per-Region-Overlap (PRO)** metric on top of pixel- and image-AUROC.
-
-### Tier 4 — Code-quality cleanup
-- Wildcard imports removed; everything goes through explicit packages.
-- Type hints, modern f-strings, no `Variable`.
-- Network indices live on the network class, not scattered across files.
-
-### Tier 5 — Engineering polish
-- CLI overrides on `train.py`: `--epochs`, `--lr`, `--batch_size`, `--device`,
-  `--seed`, `--resume`, `--no_amp`.
-- **AMP** mixed precision (CUDA only) for ~2× speedup with no accuracy hit.
-- **Teacher-feature caching** (`train.cache_teacher: true`) skips the frozen
-  teacher's forward pass on every epoch — large speedup on small datasets.
-- **Dockerfile** for reproducible runs.
-- `pytest`-based smoke tests (`tests/`).
-- A **single-image inference script** (`scripts/score.py`) that prints the
-  anomaly score and optionally saves a heatmap PNG.
-
 ## Project layout
 
 ```

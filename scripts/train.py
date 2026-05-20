@@ -22,11 +22,11 @@ from tqdm import tqdm
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from stad.data import build_loaders  # noqa: E402
-from stad.eval import detection_test  # noqa: E402
-from stad.losses import DirectionOnlyLoss, MseDirectionLoss  # noqa: E402
-from stad.models import build_networks  # noqa: E402
-from stad.utils import load_config, resolve_device, set_seed, setup_logger  # noqa: E402
+from stad.data import build_loaders
+from stad.eval import detection_test
+from stad.losses import DirectionOnlyLoss, MseDirectionLoss
+from stad.models import build_networks
+from stad.utils import load_config, resolve_device, set_seed, setup_logger
 
 
 def _parse_args() -> argparse.Namespace:

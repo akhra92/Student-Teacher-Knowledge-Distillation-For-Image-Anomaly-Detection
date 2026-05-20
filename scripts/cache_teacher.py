@@ -18,9 +18,9 @@ from tqdm import tqdm
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from stad.data import build_loaders  # noqa: E402
-from stad.models import build_networks  # noqa: E402
-from stad.utils import load_config, resolve_device, set_seed  # noqa: E402
+from stad.data import build_loaders
+from stad.models import build_networks
+from stad.utils import load_config, resolve_device, set_seed
 
 
 def main() -> None:
