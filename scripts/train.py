@@ -60,6 +60,21 @@ def _apply_overrides(cfg: dict, args: argparse.Namespace) -> dict:
     return cfg
 
 
+@torch.no_grad()
+def _compute_val_loss(student, teacher, loader, criterion, device) -> float:
+    """Average distillation loss over the val set (lower = better mimic)."""
+    student.eval()
+    total, n = 0.0, 0
+    for X, _ in loader:
+        X = X.to(device, non_blocking=True)
+        if X.shape[1] == 1:
+            X = X.repeat(1, 3, 1, 1)
+        loss = criterion(student(X), teacher(X))
+        total += loss.item()
+        n += 1
+    return total / max(1, n)
+
+
 def main() -> None:
     args = _parse_args()
     cfg = _apply_overrides(load_config(args.config), args)
@@ -119,7 +134,11 @@ def main() -> None:
     log_every = int(train_cfg.get("log_every", 10))
     val_every = int(train_cfg.get("val_every", 1))
     ckpt_every = int(train_cfg.get("ckpt_every", 50))
-    best_auroc = -1.0
+    # Selection metric: higher is better. When val AUROC is defined (val set
+    # contains anomalies) we select on it; otherwise (e.g. MVTec, whose val is
+    # normal-only) we fall back to negative val loss so a best checkpoint is
+    # still saved.
+    best_metric = float("-inf")
     global_step = 0
 
     for epoch in range(num_epochs + 1):
@@ -177,18 +196,28 @@ def main() -> None:
                 direction_only=bool(train_cfg.get("direction_loss_only", False)),
             )
             auroc = metrics["auroc"]
-            log.info(f"  [val] auroc={auroc:.4f}  (n_normal={metrics['n_normal']}, n_anom={metrics['n_anomaly']})")
+            val_loss = _compute_val_loss(student, teacher, val_loader, criterion, device)
+            log.info(
+                f"  [val] auroc={auroc:.4f}  loss={val_loss:.4f}  "
+                f"(n_normal={metrics['n_normal']}, n_anom={metrics['n_anomaly']})"
+            )
             writer.add_scalar("val/auroc", auroc if auroc == auroc else 0.0, epoch)
+            writer.add_scalar("val/loss", val_loss, epoch)
 
-            if auroc == auroc and auroc > best_auroc:
-                best_auroc = auroc
+            # AUROC when defined, else -loss. NaN comparisons are False, so a
+            # NaN auroc cleanly falls through to the loss-based metric.
+            metric = auroc if auroc == auroc else -val_loss
+            if metric > best_metric:
+                best_metric = metric
                 torch.save({
                     "student": student.state_dict(),
                     "config": cfg,
                     "epoch": epoch,
                     "val_auroc": auroc,
+                    "val_loss": val_loss,
                 }, ckpt_dir / "best.pth")
-                log.info(f"  → new best (auroc={auroc:.4f}) saved to {ckpt_dir/'best.pth'}")
+                tag = f"auroc={auroc:.4f}" if auroc == auroc else f"loss={val_loss:.4f}"
+                log.info(f"  → new best ({tag}) saved to {ckpt_dir/'best.pth'}")
 
         if epoch % ckpt_every == 0 and epoch > 0:
             torch.save({
@@ -197,7 +226,7 @@ def main() -> None:
                 "epoch": epoch,
             }, ckpt_dir / f"epoch_{epoch}.pth")
 
-    log.info(f"Training done. Best val AUROC: {best_auroc:.4f}")
+    log.info(f"Training done. Best val metric (auroc or -loss): {best_metric:.4f}")
     writer.close()
 
 

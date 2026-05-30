@@ -18,7 +18,7 @@ data:
 
 # ---------- Networks ----------
 teacher:
-  kind: vgg16               # vgg16 | timm
+  kind: timm               # vgg16 | timm
   pretrained: true
   timm_model: vit_small_patch14_dinov2.lvd142m   # only used when kind=timm
   feature_layers: [3, 6, 9, 12]                  # which intermediate layers to compare

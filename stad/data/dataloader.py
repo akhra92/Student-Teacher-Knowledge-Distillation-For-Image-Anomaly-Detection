@@ -12,7 +12,7 @@ from typing import Any
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
 from torchvision import transforms
 from torchvision.datasets import CIFAR10, MNIST, FashionMNIST, ImageFolder
 
@@ -50,16 +50,6 @@ def _mvtec_transform(img_size: int) -> transforms.Compose:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _filter_to_normal(dataset: Dataset, normal_class: int) -> Dataset:
-    """Keep only samples whose label == normal_class."""
-    targets = np.asarray(getattr(dataset, "targets", []))
-    if targets.size == 0:
-        raise ValueError("Dataset has no `targets` attribute.")
-    mask = targets == normal_class
-    indices = np.flatnonzero(mask).tolist()
-    return Subset(dataset, indices)
-
 
 def _train_val_split(
     dataset: Dataset, val_fraction: float, seed: int
@@ -104,8 +94,29 @@ def build_loaders(
 
         full_train = cls(str(train_root), train=True, download=True, transform=tfm)
         test_set = cls(str(test_root), train=False, download=True, transform=tfm)
-        normal_only = _filter_to_normal(full_train, int(normal_class))
-        train_set, val_set = _train_val_split(normal_only, val_frac, seed)
+
+        # Train only on normal-class images. The validation split mixes held-out
+        # normals with a balanced sample of *non-normal* train images (which are
+        # never used for training) so val AUROC is well-defined — and the test
+        # set stays completely untouched (no leakage).
+        targets = np.asarray(full_train.targets)
+        normal_idx = np.flatnonzero(targets == int(normal_class))
+        anom_pool = np.flatnonzero(targets != int(normal_class))
+        rng = np.random.default_rng(seed)
+
+        perm = rng.permutation(len(normal_idx))
+        n_val = max(1, int(len(normal_idx) * val_frac))
+        val_normal_idx = normal_idx[perm[:n_val]]
+        train_idx = normal_idx[perm[n_val:]]
+
+        n_anom_val = min(n_val, len(anom_pool))
+        val_anom_idx = anom_pool[rng.permutation(len(anom_pool))[:n_anom_val]]
+
+        train_set = Subset(full_train, train_idx.tolist())
+        val_set = ConcatDataset([
+            Subset(full_train, val_normal_idx.tolist()),
+            Subset(full_train, val_anom_idx.tolist()),
+        ])
 
     elif name == "mvtec":
         if not isinstance(normal_class, str):
