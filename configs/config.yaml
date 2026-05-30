@@ -4,7 +4,7 @@
 
 experiment_name: mnist_v2
 output_dir: ./outputs
-device: auto                # auto | cuda | mps | cpu
+device: mps                # auto | cuda | mps | cpu
 seed: 42
 
 # ---------- Data ----------
@@ -35,7 +35,6 @@ train:
   weight_decay: 0.0
   lamda: 0.05               # mvtec:0.5, others:0.05
   direction_loss_only: false
-  amp: true                 # automatic mixed precision
   cache_teacher: false      # pre-compute teacher features (memory-heavy but fast)
   resume: null              # path to checkpoint to resume from
   log_every: 10

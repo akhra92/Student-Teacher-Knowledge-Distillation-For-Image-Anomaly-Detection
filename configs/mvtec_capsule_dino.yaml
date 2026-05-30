@@ -28,7 +28,6 @@ train:
   weight_decay: 0.0
   lamda: 0.5
   direction_loss_only: false
-  amp: true
   cache_teacher: true
   resume: null
   log_every: 10

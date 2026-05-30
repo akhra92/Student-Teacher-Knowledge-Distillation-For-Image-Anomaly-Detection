@@ -71,7 +71,6 @@ pytest tests/
 | `teacher.feature_layers` | list[int] | Indices of layers to compare. |
 | `student.equal_size` | bool | True = full-size mirror; False = compressed cloner. |
 | `train.lamda` | float | Weight on the MSE term (vs. cosine direction term). |
-| `train.amp` | bool | Mixed-precision training (CUDA only). |
 | `train.cache_teacher` | bool | Cache teacher features once per epoch in memory. |
 | `eval.localization` | bool | Pixel-level eval (MVTec only). |
 | `eval.localization_method` | `feature_dist` / `gradients` / `smooth_grad` / `gbp` | How to make heatmaps. |

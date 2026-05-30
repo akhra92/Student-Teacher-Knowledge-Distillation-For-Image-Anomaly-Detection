@@ -2,10 +2,11 @@
 
 Improvements vs. the original:
 * Validation split (no test-set leakage) drives best-checkpoint selection.
-* AMP (mixed precision) for ~2x speedup on modern GPUs.
 * TensorBoard logging.
 * Optional teacher-feature caching: precompute teacher outputs once.
 * CLI overrides for common knobs (--epochs, --lr, --batch_size, --device).
+
+Runs on CPU or Apple-Silicon MPS; no GPU-specific paths.
 """
 
 from __future__ import annotations
@@ -17,7 +18,6 @@ from pathlib import Path
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -38,7 +38,6 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--resume", type=str, default=None)
-    p.add_argument("--no_amp", action="store_true")
     return p.parse_args()
 
 
@@ -55,8 +54,6 @@ def _apply_overrides(cfg: dict, args: argparse.Namespace) -> dict:
         cfg["seed"] = args.seed
     if args.resume is not None:
         cfg["train"]["resume"] = args.resume
-    if args.no_amp:
-        cfg["train"]["amp"] = False
     return cfg
 
 
@@ -113,9 +110,6 @@ def main() -> None:
         lr=float(train_cfg["learning_rate"]),
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
     )
-    use_amp = bool(train_cfg.get("amp", True)) and device.type == "cuda"
-    scaler = torch.amp.GradScaler(enabled=use_amp)
-
     # ---- Optional teacher-feature cache --------------------------------
     cached_train: list[list[torch.Tensor]] | None = None
     if bool(train_cfg.get("cache_teacher", False)):
@@ -161,19 +155,17 @@ def main() -> None:
             if X.shape[1] == 1:
                 X = X.repeat(1, 3, 1, 1)
 
-            with torch.amp.autocast(enabled=use_amp):
-                pred = student(X)
-                if cached_train is None:
-                    with torch.no_grad():
-                        target = teacher(X)
-                else:
-                    target = [t.to(device, non_blocking=True) for t in cached]
-                loss = criterion(pred, target)
+            pred = student(X)
+            if cached_train is None:
+                with torch.no_grad():
+                    target = teacher(X)
+            else:
+                target = [t.to(device, non_blocking=True) for t in cached]
+            loss = criterion(pred, target)
 
             optimizer.zero_grad(set_to_none=True)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            loss.backward()
+            optimizer.step()
 
             epoch_loss += loss.item()
             n_batches += 1
