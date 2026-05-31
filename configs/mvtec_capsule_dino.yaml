@@ -18,8 +18,7 @@ teacher:
   feature_layers: [2, 5, 8, 11]
 
 student:
-  equal_size: false
-  use_bias: false
+  mlp_ratio: 2.0            # ViT student capacity (teacher uses 4.0); lower = tighter anomaly bottleneck
 
 train:
   num_epochs: 200
@@ -35,7 +34,7 @@ train:
   ckpt_every: 50
 
 eval:
-  localization: true
+  localization: false                # pixel-level saliency is CNN/VGG-only; ViT teacher does image-level detection
   localization_method: feature_dist
   smooth_grad_n: 25
   smooth_grad_sigma: 0.05

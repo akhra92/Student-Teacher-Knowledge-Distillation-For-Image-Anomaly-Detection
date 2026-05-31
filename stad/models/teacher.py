@@ -38,19 +38,42 @@ class Vgg16Teacher(nn.Module):
         return outputs
 
 
-class TimmTeacher(nn.Module):
-    """Frozen timm backbone returning per-block features.
+def _vit_block_features(backbone, x: torch.Tensor) -> list[torch.Tensor]:
+    """Walk a timm ViT block-by-block, returning one `(B, N, D)` token tensor
+    per transformer block. Shared by `TimmTeacher` and `ViTStudent` so the two
+    stay aligned by block position."""
+    b = backbone
+    x = b.patch_embed(x)
+    x = b._pos_embed(x)
+    if hasattr(b, "patch_drop"):
+        x = b.patch_drop(x)
+    x = b.norm_pre(x) if hasattr(b, "norm_pre") else x
+    outputs: list[torch.Tensor] = []
+    for blk in b.blocks:
+        x = blk(x)
+        outputs.append(x)
+    return outputs
 
-    Works for ViT-family (DINOv2, CLIP-ViT, plain ViT) — features come back as
-    a list of `(B, N, D)` token tensors. Also handles CNN backbones via timm's
-    `features_only=True` mode, returning `(B, C, H, W)` maps.
+
+class TimmTeacher(nn.Module):
+    """Frozen timm ViT backbone returning per-block token features.
+
+    Works for the ViT family (DINOv2, CLIP-ViT, plain ViT): `forward` returns
+    one `(B, N, D)` token tensor *per transformer block*, so loss/eval code can
+    index by block position — exactly like `Vgg16Teacher` indexes by ReLU
+    position. `dynamic_img_size` + `dynamic_img_pad` let it accept arbitrary
+    input resolutions (e.g. 32x32 MNIST, 256x256 MVTec) despite the model's
+    native size.
+
+    Structural attributes (`embed_dim`, `patch_size`, `num_prefix_tokens`,
+    `num_heads`, `depth`) are exposed so a matching `ViTStudent` can be built.
     """
 
     def __init__(
         self,
         model_name: str,
         pretrained: bool = True,
-        feature_layers: Sequence[int] | None = None,
+        feature_layers: Sequence[int] | None = None,  # accepted for API symmetry; unused
     ):
         super().__init__()
         try:
@@ -58,52 +81,29 @@ class TimmTeacher(nn.Module):
         except ImportError as e:
             raise ImportError("`timm` is required for TimmTeacher. pip install timm.") from e
 
-        try:
-            self.backbone = timm.create_model(model_name, pretrained=pretrained, num_classes=0)
-            self._mode = "vit"
-            n_blocks = len(getattr(self.backbone, "blocks", []))
-            if n_blocks == 0:
-                raise AttributeError
-            self._n_blocks = n_blocks
-        except (AttributeError, RuntimeError):
-            self.backbone = timm.create_model(model_name, pretrained=pretrained, features_only=True)
-            self._mode = "cnn"
-            self._n_blocks = len(self.backbone.feature_info)
-
-        self._feature_layers = (
-            tuple(feature_layers) if feature_layers is not None else tuple(range(self._n_blocks))
+        self.backbone = timm.create_model(
+            model_name, pretrained=pretrained, num_classes=0,
+            dynamic_img_size=True, dynamic_img_pad=True,
         )
+        if len(getattr(self.backbone, "blocks", [])) == 0:
+            raise ValueError(
+                f"TimmTeacher only supports ViT-family models with `.blocks`; "
+                f"'{model_name}' has none."
+            )
+
+        ps = self.backbone.patch_embed.patch_size
+        self.depth: int = len(self.backbone.blocks)
+        self.embed_dim: int = int(self.backbone.embed_dim)
+        self.patch_size: int = int(ps[0]) if isinstance(ps, (tuple, list)) else int(ps)
+        self.num_prefix_tokens: int = int(getattr(self.backbone, "num_prefix_tokens", 1))
+        self.num_heads: int = int(
+            getattr(self.backbone.blocks[0].attn, "num_heads", max(1, self.embed_dim // 64))
+        )
+
         for p in self.backbone.parameters():
             p.requires_grad_(False)
         self.eval()
 
-    @property
-    def output_indices(self) -> tuple[int, ...]:
-        return self._feature_layers
-
     @torch.no_grad()
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
-        if self._mode == "cnn":
-            feats = self.backbone(x)
-            return [feats[i] for i in self._feature_layers if i < len(feats)]
-
-        b = self.backbone
-        x = b.patch_embed(x)
-        if hasattr(b, "_pos_embed"):
-            x = b._pos_embed(x)
-        else:
-            if getattr(b, "cls_token", None) is not None:
-                cls = b.cls_token.expand(x.shape[0], -1, -1)
-                x = torch.cat((cls, x), dim=1)
-            x = x + b.pos_embed
-        x = b.norm_pre(x) if hasattr(b, "norm_pre") else x
-
-        outputs: list[torch.Tensor] = []
-        last_needed = max(self._feature_layers)
-        for i, blk in enumerate(b.blocks):
-            x = blk(x)
-            if i in self._feature_layers:
-                outputs.append(x)
-            if i >= last_needed:
-                break
-        return outputs
+        return _vit_block_features(self.backbone, x)

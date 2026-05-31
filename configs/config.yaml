@@ -21,11 +21,14 @@ teacher:
   kind: timm               # vgg16 | timm
   pretrained: true
   timm_model: vit_small_patch14_dinov2.lvd142m   # only used when kind=timm
-  feature_layers: [3, 6, 9, 12]                  # which intermediate layers to compare
+  feature_layers: [2, 5, 8, 11]                  # block indices to compare (0..depth-1; vgg16 uses [3,6,9,12])
 
 student:
+  # --- vgg16 teacher ---
   equal_size: false         # false → small "cloner"; true → full-size mirror
   use_bias: false
+  # --- timm/ViT teacher ---
+  mlp_ratio: 2.0            # ViT student capacity (teacher uses 4.0); lower = tighter anomaly bottleneck
 
 # ---------- Training ----------
 train:

@@ -16,8 +16,9 @@ Student-Teacher-Anomaly-Detection-V2/
 ├── stad/                        # importable package
 │   ├── data/dataloader.py       # train/val/test loaders, no leakage
 │   ├── models/
-│   │   ├── teacher.py           # Vgg16Teacher + TimmTeacher
-│   │   ├── student.py           # cloner CNN
+│   │   ├── teacher.py           # Vgg16Teacher + TimmTeacher (ViT/DINOv2)
+│   │   ├── student.py           # cloner CNN (for the VGG16 teacher)
+│   │   ├── vit_student.py       # ViT cloner (for the timm/DINOv2 teacher)
 │   │   └── factory.py           # build_networks()
 │   ├── losses/distillation.py   # MseDirectionLoss / DirectionOnly / MseLoss
 │   ├── eval/
@@ -67,12 +68,13 @@ pytest tests/
 | `data.dataset_name` | `mnist` / `fashionmnist` / `cifar10` / `mvtec` | Picks loader + transforms. |
 | `data.normal_class` | int / str | The "normal" class (string for MVTec). |
 | `data.val_fraction` | float | Held-out slice of training data for model selection. |
-| `teacher.kind` | `vgg16` / `timm` | VGG16 (default) or any timm backbone. |
-| `teacher.feature_layers` | list[int] | Indices of layers to compare. |
-| `student.equal_size` | bool | True = full-size mirror; False = compressed cloner. |
+| `teacher.kind` | `vgg16` / `timm` | VGG16 CNN (default) or a timm ViT (e.g. DINOv2). |
+| `teacher.feature_layers` | list[int] | Layers to compare. VGG16: ReLU positions (e.g. `[3,6,9,12]`). ViT: block indices `0..depth-1` (e.g. `[2,5,8,11]`). |
+| `student.equal_size` | bool | VGG student only. True = full-size mirror; False = compressed cloner. |
+| `student.mlp_ratio` | float | ViT student only. Capacity bottleneck (teacher uses 4.0; lower = stronger anomaly signal). |
 | `train.lamda` | float | Weight on the MSE term (vs. cosine direction term). |
 | `train.cache_teacher` | bool | Cache teacher features once per epoch in memory. |
-| `eval.localization` | bool | Pixel-level eval (MVTec only). |
+| `eval.localization` | bool | Pixel-level eval (MVTec + VGG16 teacher only; not supported for the ViT teacher). |
 | `eval.localization_method` | `feature_dist` / `gradients` / `smooth_grad` / `gbp` | How to make heatmaps. |
 
 ## Anomaly score formula
