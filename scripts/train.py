@@ -12,9 +12,15 @@ Runs on CPU or Apple-Silicon MPS; no GPU-specific paths.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
+
+# A few ViT ops (e.g. antialiased bicubic pos-embed resampling used by the
+# DINOv2/ViT student) lack an MPS backward kernel; fall back to CPU for those.
+# Tiny tensors, negligible cost. Set before importing torch. Override-able.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import torch
 from torch.utils.tensorboard import SummaryWriter

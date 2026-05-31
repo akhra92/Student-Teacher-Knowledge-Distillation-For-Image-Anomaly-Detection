@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
+
+# ViT pos-embed resampling lacks some MPS kernels; fall back to CPU for those.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))

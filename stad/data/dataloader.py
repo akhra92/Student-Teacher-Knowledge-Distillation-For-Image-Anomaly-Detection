@@ -25,7 +25,7 @@ _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def _classification_transform(dataset: str, img_size: int | None = None) -> transforms.Compose:
+def _classification_transform(dataset: str, normalize_imagenet: bool = False) -> transforms.Compose:
     if dataset == "cifar10":
         return transforms.Compose([
             transforms.Resize((256, 256)),
@@ -33,18 +33,26 @@ def _classification_transform(dataset: str, img_size: int | None = None) -> tran
             transforms.ToTensor(),
             transforms.Normalize(_IMAGENET_MEAN, _IMAGENET_STD),
         ])
-    # mnist / fashionmnist
-    return transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-    ])
+    # mnist / fashionmnist (grayscale). ImageNet-pretrained backbones expect a
+    # 3-channel, ImageNet-normalized input — expand to 3 channels (Grayscale is
+    # picklable, unlike a Lambda, so it survives num_workers spawn) then normalize.
+    steps: list = [transforms.Resize((32, 32))]
+    if normalize_imagenet:
+        steps += [
+            transforms.Grayscale(num_output_channels=3),
+            transforms.ToTensor(),
+            transforms.Normalize(_IMAGENET_MEAN, _IMAGENET_STD),
+        ]
+    else:
+        steps += [transforms.ToTensor()]
+    return transforms.Compose(steps)
 
 
-def _mvtec_transform(img_size: int) -> transforms.Compose:
-    return transforms.Compose([
-        transforms.Resize((img_size, img_size)),
-        transforms.ToTensor(),
-    ])
+def _mvtec_transform(img_size: int, normalize_imagenet: bool = False) -> transforms.Compose:
+    steps: list = [transforms.Resize((img_size, img_size)), transforms.ToTensor()]
+    if normalize_imagenet:
+        steps += [transforms.Normalize(_IMAGENET_MEAN, _IMAGENET_STD)]
+    return transforms.Compose(steps)
 
 
 # ---------------------------------------------------------------------------
@@ -83,9 +91,12 @@ def build_loaders(
     num_workers = int(data_cfg.get("num_workers", 4))
     seed = int(cfg.get("seed", 42))
     batch_size = int(cfg["train"]["batch_size"])
+    # ImageNet-pretrained ViT teachers (timm/DINOv2) expect ImageNet-normalized,
+    # 3-channel inputs. The VGG16 path keeps its original (unnormalized) pipeline.
+    normalize = cfg.get("teacher", {}).get("kind") == "timm"
 
     if name in {"mnist", "fashionmnist", "cifar10"}:
-        tfm = _classification_transform(name)
+        tfm = _classification_transform(name, normalize_imagenet=normalize)
         cls = {"mnist": MNIST, "fashionmnist": FashionMNIST, "cifar10": CIFAR10}[name]
         train_root = root / name / "train"
         test_root = root / name / "test"
@@ -121,7 +132,7 @@ def build_loaders(
     elif name == "mvtec":
         if not isinstance(normal_class, str):
             raise ValueError("MVTec normal_class must be a category string (e.g. 'capsule').")
-        tfm = _mvtec_transform(int(data_cfg["mvtec_img_size"]))
+        tfm = _mvtec_transform(int(data_cfg["mvtec_img_size"]), normalize_imagenet=normalize)
         train_dir = root / "mvtec" / normal_class / "train"
         test_dir = root / "mvtec" / normal_class / "test"
         if not train_dir.is_dir() or not test_dir.is_dir():
