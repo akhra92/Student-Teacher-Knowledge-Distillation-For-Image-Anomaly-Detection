@@ -25,7 +25,9 @@ _IMAGENET_MEAN = (0.485, 0.456, 0.406)
 _IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-def _classification_transform(dataset: str, normalize_imagenet: bool = False) -> transforms.Compose:
+def _classification_transform(
+    dataset: str, normalize_imagenet: bool = False, img_size: int = 32
+) -> transforms.Compose:
     if dataset == "cifar10":
         return transforms.Compose([
             transforms.Resize((256, 256)),
@@ -36,7 +38,8 @@ def _classification_transform(dataset: str, normalize_imagenet: bool = False) ->
     # mnist / fashionmnist (grayscale). ImageNet-pretrained backbones expect a
     # 3-channel, ImageNet-normalized input — expand to 3 channels (Grayscale is
     # picklable, unlike a Lambda, so it survives num_workers spawn) then normalize.
-    steps: list = [transforms.Resize((32, 32))]
+    # ViT teachers also need a real resolution (32px gives a near-empty patch grid).
+    steps: list = [transforms.Resize((img_size, img_size))]
     if normalize_imagenet:
         steps += [
             transforms.Grayscale(num_output_channels=3),
@@ -94,9 +97,13 @@ def build_loaders(
     # ImageNet-pretrained ViT teachers (timm/DINOv2) expect ImageNet-normalized,
     # 3-channel inputs. The VGG16 path keeps its original (unnormalized) pipeline.
     normalize = cfg.get("teacher", {}).get("kind") == "timm"
+    # Tiny inputs starve a ViT's patch grid, so upsize for the ViT path only;
+    # VGG16 stays at its native 32px. 224 is divisible by the DINOv2 patch (14).
+    vit_img_size = int(data_cfg.get("vit_img_size", 224))
+    clf_img_size = vit_img_size if normalize else 32
 
     if name in {"mnist", "fashionmnist", "cifar10"}:
-        tfm = _classification_transform(name, normalize_imagenet=normalize)
+        tfm = _classification_transform(name, normalize_imagenet=normalize, img_size=clf_img_size)
         cls = {"mnist": MNIST, "fashionmnist": FashionMNIST, "cifar10": CIFAR10}[name]
         train_root = root / name / "train"
         test_root = root / name / "test"

@@ -35,7 +35,22 @@ def build_networks(
             use_bias=bool(s_cfg.get("use_bias", False)),
             batch_norm=True,
         )
-        feature_layers = list(t_cfg.get("feature_layers", [3, 6, 9, 12]))
+        # The reduced-channel cloner only matches VGG16's channel counts at
+        # these ReLU positions, so comparing anywhere else is a shape error.
+        # Forgive incompatible indices (e.g. ViT block indices left in the
+        # config) by keeping the valid ones, mirroring the timm branch below.
+        vgg_layers = [3, 6, 9, 12]
+        requested = list(t_cfg.get("feature_layers", vgg_layers))
+        feature_layers = [i for i in requested if i in vgg_layers]
+        if not feature_layers:
+            feature_layers = vgg_layers
+        if feature_layers != requested:
+            import warnings
+            warnings.warn(
+                f"vgg16 teacher: feature_layers {requested} are incompatible with the "
+                f"cloner student (channels only match at {vgg_layers}); using {feature_layers}.",
+                stacklevel=2,
+            )
 
     elif t_cfg["kind"] == "timm":
         teacher = TimmTeacher(

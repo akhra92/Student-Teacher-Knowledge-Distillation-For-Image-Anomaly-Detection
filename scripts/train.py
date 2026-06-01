@@ -10,6 +10,8 @@ Runs on CPU or Apple-Silicon MPS; no GPU-specific paths.
 """
 
 from __future__ import annotations
+import warnings
+warnings.filterwarnings('ignore')
 
 import argparse
 import os

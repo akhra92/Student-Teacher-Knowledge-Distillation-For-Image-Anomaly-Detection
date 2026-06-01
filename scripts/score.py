@@ -37,7 +37,10 @@ def _build_transform(cfg: dict) -> transforms.Compose:
             transforms.ToTensor(),
             imagenet,
         ])
-    size = int(cfg["data"]["mvtec_img_size"]) if name == "mvtec" else 32
+    if name == "mvtec":
+        size = int(cfg["data"]["mvtec_img_size"])
+    else:  # mnist / fashionmnist: ViT teacher needs a real resolution; VGG16 stays at 32
+        size = int(cfg["data"].get("vit_img_size", 224)) if normalize else 32
     steps: list = [transforms.Resize((size, size)), transforms.ToTensor()]
     if normalize:
         steps.append(imagenet)

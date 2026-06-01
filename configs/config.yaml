@@ -2,7 +2,7 @@
 # Student-Teacher Anomaly Detection — Configuration
 # =====================================================================
 
-experiment_name: mnist_v2
+experiment_name: mnist_v4
 output_dir: ./outputs
 device: mps                # auto | cuda | mps | cpu
 seed: 42
@@ -15,13 +15,14 @@ data:
   val_fraction: 0.1         # carve val out of train (anti-leakage)
   num_workers: 4
   mvtec_img_size: 256
+  vit_img_size: 224         # mnist/fmnist input size for the timm/ViT teacher only (vgg16 stays at 32); 224 = 16×14 patches
 
 # ---------- Networks ----------
 teacher:
   kind: timm               # vgg16 | timm
   pretrained: true
   timm_model: vit_small_patch14_dinov2.lvd142m   # only used when kind=timm
-  feature_layers: [2, 5, 8, 11]                  # block indices to compare (0..depth-1; vgg16 uses [3,6,9,12])
+  feature_layers: [2, 5, 8, 11]                  # vgg16: [3,6,9,12] (only compatible set);  timm/ViT: block indices, e.g. [2,5,8,11]
 
 student:
   # --- vgg16 teacher ---
