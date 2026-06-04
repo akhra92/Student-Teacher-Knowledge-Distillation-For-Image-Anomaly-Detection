@@ -5,10 +5,11 @@ __pycache__/
 .venv/
 venv/
 .env
+.claude
 
 # Project artifacts
 outputs/
-dataset/
+data/
 *.pth
 *.pt
 *.pickle
