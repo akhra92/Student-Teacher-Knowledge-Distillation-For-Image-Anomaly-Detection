@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # =====================================================================
-# Simple runner for training / testing the Student-Teacher model.
+# Simple runner for the Student-Teacher model — locally (conda) or in Docker.
 #
-# Usage:
+# Local (conda env) modes:
 #   ./run.sh train                       # train with default config
 #   ./run.sh test                        # evaluate the best checkpoint
 #   ./run.sh train -c configs/mvtec_capsule.yaml
 #   ./run.sh test  -c configs/config.yaml --localization
+#
+# Docker modes (builds the image if needed, mounts data/ and outputs/):
+#   ./run.sh docker-build                # just build the image
+#   ./run.sh docker-train                # build (if needed) + train in a container
+#   ./run.sh docker-test  --localization # build (if needed) + test in a container
 #
 # Any extra flags after the mode are forwarded straight to the python script.
 # =====================================================================
@@ -14,6 +19,7 @@ set -euo pipefail
 
 # --- Settings ---------------------------------------------------------
 CONDA_ENV="${CONDA_ENV:-myenv}"          # override with CONDA_ENV=... ./run.sh
+IMAGE="${IMAGE:-stad}"                    # docker image tag
 CONFIG="configs/config.yaml"             # default; override with -c / --config
 
 # Always run from the project root (directory of this script).
@@ -21,11 +27,14 @@ cd "$(dirname "$0")"
 
 # --- Parse args -------------------------------------------------------
 MODE="${1:-}"
-if [[ "$MODE" != "train" && "$MODE" != "test" ]]; then
-    echo "Usage: $0 {train|test} [-c CONFIG] [extra args...]" >&2
-    exit 1
-fi
-shift
+case "$MODE" in
+    train|test|docker-build|docker-train|docker-test) ;;
+    *)
+        echo "Usage: $0 {train|test|docker-build|docker-train|docker-test} [-c CONFIG] [extra args...]" >&2
+        exit 1
+        ;;
+esac
+shift || true
 
 # Pull out an optional -c/--config; pass everything else through.
 EXTRA=()
@@ -36,12 +45,45 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# --- Activate the conda env -------------------------------------------
-# shellcheck disable=SC1091
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate "$CONDA_ENV"
+# --- Docker helpers ---------------------------------------------------
+docker_build() {
+    echo ">> docker build -t $IMAGE ."
+    docker build -t "$IMAGE" .
+}
 
-# --- Run --------------------------------------------------------------
-SCRIPT="scripts/${MODE}.py"
-echo ">> env=$CONDA_ENV  config=$CONFIG  script=$SCRIPT  extra=${EXTRA[*]:-}"
-python "$SCRIPT" --config "$CONFIG" "${EXTRA[@]}"
+# Run a python script inside the container with the GPU and host data/outputs.
+docker_run() {
+    local script="$1"; shift
+    # Build the image if it doesn't exist yet.
+    if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        docker_build
+    fi
+    echo ">> docker run ($IMAGE)  config=$CONFIG  script=$script  extra=${EXTRA[*]:-}"
+    docker run --rm --gpus all \
+        -v "$PWD/data:/workspace/data" \
+        -v "$PWD/outputs:/workspace/outputs" \
+        "$IMAGE" \
+        python "$script" --config "$CONFIG" "${EXTRA[@]}"
+}
+
+# --- Dispatch ---------------------------------------------------------
+case "$MODE" in
+    docker-build)
+        docker_build
+        ;;
+    docker-train)
+        docker_run scripts/train.py
+        ;;
+    docker-test)
+        docker_run scripts/test.py
+        ;;
+    train|test)
+        # Local conda run.
+        # shellcheck disable=SC1091
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate "$CONDA_ENV"
+        SCRIPT="scripts/${MODE}.py"
+        echo ">> env=$CONDA_ENV  config=$CONFIG  script=$SCRIPT  extra=${EXTRA[*]:-}"
+        python "$SCRIPT" --config "$CONFIG" "${EXTRA[@]}"
+        ;;
+esac

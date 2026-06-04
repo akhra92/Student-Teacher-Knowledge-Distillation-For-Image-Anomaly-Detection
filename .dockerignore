@@ -1,0 +1,34 @@
+# Keep the build context (and image) small and reproducible.
+
+# Datasets and run artifacts — mount these at runtime instead of baking them in.
+data/
+outputs/
+runs/
+*.pth
+*.pt
+*.ckpt
+*.pickle
+
+# VCS / editor / OS
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Misc
+.claude
+README.md
