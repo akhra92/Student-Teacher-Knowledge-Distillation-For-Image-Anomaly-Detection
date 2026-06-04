@@ -4,7 +4,7 @@
 
 experiment_name: mnist_v4
 output_dir: ./outputs
-device: mps                # auto | cuda | mps | cpu
+device: cuda                # auto | cuda | mps | cpu
 seed: 42
 
 # ---------- Data ----------
