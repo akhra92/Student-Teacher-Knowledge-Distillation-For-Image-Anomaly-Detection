@@ -13,6 +13,10 @@
 #   ./run.sh docker-train                # build (if needed) + train in a container
 #   ./run.sh docker-test  --localization # build (if needed) + test in a container
 #
+# TensorBoard (compare all experiments under outputs/):
+#   ./run.sh tb                          # serve outputs/ on http://localhost:6006
+#   ./run.sh tb --port 6007              # extra flags pass through to tensorboard
+#
 # Any extra flags after the mode are forwarded straight to the python script.
 # =====================================================================
 set -euo pipefail
@@ -28,9 +32,9 @@ cd "$(dirname "$0")"
 # --- Parse args -------------------------------------------------------
 MODE="${1:-}"
 case "$MODE" in
-    train|test|docker-build|docker-train|docker-test) ;;
+    train|test|docker-build|docker-train|docker-test|tb) ;;
     *)
-        echo "Usage: $0 {train|test|docker-build|docker-train|docker-test} [-c CONFIG] [extra args...]" >&2
+        echo "Usage: $0 {train|test|docker-build|docker-train|docker-test|tb} [-c CONFIG] [extra args...]" >&2
         exit 1
         ;;
 esac
@@ -76,6 +80,14 @@ case "$MODE" in
         ;;
     docker-test)
         docker_run scripts/test.py
+        ;;
+    tb)
+        # Serve every experiment under outputs/ as a separate run for comparison.
+        # shellcheck disable=SC1091
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate "$CONDA_ENV"
+        echo ">> tensorboard --logdir outputs ${EXTRA[*]:-}  (http://localhost:6006)"
+        tensorboard --logdir outputs "${EXTRA[@]}"
         ;;
     train|test)
         # Local conda run.

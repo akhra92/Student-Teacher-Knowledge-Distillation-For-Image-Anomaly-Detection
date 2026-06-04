@@ -1,8 +1,10 @@
 # =====================================================================
-# Student-Teacher Anomaly Detection — Configuration
+# Student-Teacher Anomaly Detection — bigger ViT teacher benchmark
+# DINOv2 ViT-Base (768-dim, depth 12) on MNIST. Compare AUROC against the
+# ViT-Small teacher (config.yaml) and the VGG16 teacher.
 # =====================================================================
 
-experiment_name: mnist_v5
+experiment_name: mnist_vit_base
 output_dir: ./outputs
 device: cuda                # auto | cuda | mps | cpu
 seed: 42
@@ -15,25 +17,25 @@ data:
   val_fraction: 0.1         # carve val out of train (anti-leakage)
   num_workers: 4
   mvtec_img_size: 256
-  vit_img_size: 224         # mnist/fmnist input size for the timm/ViT teacher only (vgg16 stays at 32); 224 = 16×14 patches
+  vit_img_size: 224         # mnist/fmnist input size for the timm/ViT teacher only; 224 = 16×14 patches
 
 # ---------- Networks ----------
 teacher:
-  kind: timm               # vgg16 | timm
+  kind: timm                                     # vgg16 | timm
   pretrained: true
-  timm_model: vit_small_patch14_dinov2.lvd142m   # only used when kind=timm
-  feature_layers: [3,6,9,12]                  # vgg16: [3,6,9,12] (only compatible set);  timm/ViT: block indices, e.g. [2,5,8,11]
+  timm_model: vit_base_patch14_dinov2.lvd142m    # bigger teacher: 768-dim, depth 12, patch 14
+  feature_layers: [2, 5, 8, 11]                  # ViT block indices (base is depth 12, so 0..11)
 
 student:
-  # --- vgg16 teacher ---
-  equal_size: false         # false → small "cloner"; true → full-size mirror
+  # --- vgg16 teacher (unused on this config) ---
+  equal_size: false
   use_bias: false
   # --- timm/ViT teacher ---
-  mlp_ratio: 3.0            # ViT student capacity (teacher uses 4.0); lower = tighter anomaly bottleneck
+  mlp_ratio: 3.0            # student auto-matches the base teacher's 768-dim width; teacher mlp_ratio is 4.0
 
 # ---------- Training ----------
 train:
-  num_epochs: 200            # mnist/fmnist:51, cifar10:201, mvtec:601
+  num_epochs: 200           # longer than the 51-epoch default: the from-scratch (now wider) student needs it
   batch_size: 32
   learning_rate: 1.0e-3
   weight_decay: 0.0
