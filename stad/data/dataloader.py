@@ -95,15 +95,12 @@ def build_loaders(
     seed = int(cfg.get("seed", 42))
     batch_size = int(cfg["train"]["batch_size"])
     # ImageNet-pretrained ViT teachers (timm/DINOv2) expect ImageNet-normalized,
-    # 3-channel inputs. The VGG16 path keeps its original (unnormalized) pipeline.
-    normalize = cfg.get("teacher", {}).get("kind") == "timm"
-    # Tiny inputs starve a ViT's patch grid, so upsize for the ViT path only;
-    # VGG16 stays at its native 32px. 224 is divisible by the DINOv2 patch (14).
-    vit_img_size = int(data_cfg.get("vit_img_size", 224))
-    clf_img_size = vit_img_size if normalize else 32
+    # 3-channel inputs. Tiny inputs starve a ViT's patch grid, so upsize;
+    # 224 is divisible by the DINOv2 patch (14).
+    clf_img_size = int(data_cfg.get("vit_img_size", 224))
 
     if name in {"mnist", "fashionmnist", "cifar10"}:
-        tfm = _classification_transform(name, normalize_imagenet=normalize, img_size=clf_img_size)
+        tfm = _classification_transform(name, normalize_imagenet=True, img_size=clf_img_size)
         cls = {"mnist": MNIST, "fashionmnist": FashionMNIST, "cifar10": CIFAR10}[name]
         train_root = root / name / "train"
         test_root = root / name / "test"
@@ -139,7 +136,7 @@ def build_loaders(
     elif name == "mvtec":
         if not isinstance(normal_class, str):
             raise ValueError("MVTec normal_class must be a category string (e.g. 'capsule').")
-        tfm = _mvtec_transform(int(data_cfg["mvtec_img_size"]), normalize_imagenet=normalize)
+        tfm = _mvtec_transform(int(data_cfg["mvtec_img_size"]), normalize_imagenet=True)
         train_dir = root / "mvtec" / normal_class / "train"
         test_dir = root / "mvtec" / normal_class / "test"
         if not train_dir.is_dir() or not test_dir.is_dir():
@@ -181,7 +178,7 @@ def build_localization_loader(cfg: dict[str, Any]) -> tuple[DataLoader, DataLoad
     test_dir = root / "test"
     gt_dir = root / "ground_truth"
 
-    tfm = _mvtec_transform(img_size)
+    tfm = _mvtec_transform(img_size, normalize_imagenet=True)
     test_set = ImageFolder(root=str(test_dir), transform=tfm)
     gt_set = ImageFolder(
         root=str(gt_dir),

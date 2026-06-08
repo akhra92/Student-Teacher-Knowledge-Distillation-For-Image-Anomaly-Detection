@@ -34,7 +34,5 @@ train:
   ckpt_every: 50
 
 eval:
-  localization: false                # pixel-level saliency is CNN/VGG-only; ViT teacher does image-level detection
+  localization: true                 # pixel-level feature-distance heatmaps
   localization_method: feature_dist
-  smooth_grad_n: 25
-  smooth_grad_sigma: 0.05

@@ -1,10 +1,9 @@
-"""Teacher networks. Two flavors:
+"""Teacher network.
 
-* `Vgg16Teacher` — modern torchvision API; emits one feature tensor per ReLU
-  activation (13 total) so loss code can compare student/teacher outputs
-  by *position* without depending on raw module indices.
-* `TimmTeacher` — wraps any timm model (ViT/DINOv2/EfficientNet/...). Returns
-  per-block token features for ViTs or stage features for CNNs.
+`TimmTeacher` wraps any timm ViT-family model (ViT/DINOv2/CLIP-ViT/...) and
+returns one feature tensor *per transformer block*, so loss/eval code can
+compare student/teacher outputs by *position* without depending on raw module
+indices.
 """
 
 from __future__ import annotations
@@ -13,29 +12,6 @@ from typing import Sequence
 
 import torch
 from torch import nn
-from torchvision.models import VGG16_Weights, vgg16
-
-
-class Vgg16Teacher(nn.Module):
-    """Frozen VGG16 returning a list of intermediate feature maps (one per ReLU)."""
-
-    def __init__(self, pretrained: bool = True):
-        super().__init__()
-        weights = VGG16_Weights.IMAGENET1K_V1 if pretrained else None
-        backbone = vgg16(weights=weights)
-        self.features = nn.ModuleList(list(backbone.features))
-        for p in self.features.parameters():
-            p.requires_grad_(False)
-        self.eval()
-
-    @torch.no_grad()
-    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
-        outputs: list[torch.Tensor] = []
-        for layer in self.features:
-            x = layer(x)
-            if isinstance(layer, nn.ReLU):
-                outputs.append(x)
-        return outputs
 
 
 def _vit_block_features(backbone, x: torch.Tensor) -> list[torch.Tensor]:
@@ -60,8 +36,7 @@ class TimmTeacher(nn.Module):
 
     Works for the ViT family (DINOv2, CLIP-ViT, plain ViT): `forward` returns
     one `(B, N, D)` token tensor *per transformer block*, so loss/eval code can
-    index by block position — exactly like `Vgg16Teacher` indexes by ReLU
-    position. `dynamic_img_size` + `dynamic_img_pad` let it accept arbitrary
+    index by block position. `dynamic_img_size` + `dynamic_img_pad` let it accept arbitrary
     input resolutions (e.g. 32x32 MNIST, 256x256 MVTec) despite the model's
     native size.
 

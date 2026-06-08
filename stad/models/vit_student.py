@@ -1,7 +1,6 @@
 """ViT student / cloner for the timm (DINOv2 / ViT) teacher.
 
-The VGG-style `Student` mirrors a *CNN* teacher's spatial feature maps. A ViT
-teacher instead emits `(B, N, D)` token tensors, so the student must speak the
+A ViT teacher emits `(B, N, D)` token tensors, so the student must speak the
 same language. `ViTStudent` is a from-scratch Vision Transformer whose patch
 size, embedding dim and prefix-token count are matched to the teacher — so its
 per-block outputs have the *identical* shape and can be compared directly by the

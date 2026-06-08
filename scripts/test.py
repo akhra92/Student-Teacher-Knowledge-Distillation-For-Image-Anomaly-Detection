@@ -54,12 +54,9 @@ def main() -> None:
             student=student, teacher=teacher,
             test_loader=test_loader, gt_loader=gt_loader,
             layer_indices=layer_indices,
-            lamda=float(cfg["train"]["lamda"]),
             device=device,
             method=cfg["eval"].get("localization_method", "feature_dist"),
             img_size=int(cfg["data"]["mvtec_img_size"]),
-            smooth_grad_n=int(cfg["eval"].get("smooth_grad_n", 25)),
-            smooth_grad_sigma=float(cfg["eval"].get("smooth_grad_sigma", 0.05)),
         )
         log.info(
             f"Localization — pixel AUROC={results['pixel_auroc']:.4f}  "

@@ -5,7 +5,7 @@
 # Local (conda env) modes:
 #   ./run.sh train                       # train with default config
 #   ./run.sh test                        # evaluate the best checkpoint
-#   ./run.sh train -c configs/mvtec_capsule.yaml
+#   ./run.sh train -c configs/mvtec_capsule_dino.yaml
 #   ./run.sh test  -c configs/config.yaml --localization
 #
 # Docker modes (builds the image if needed, mounts data/ and outputs/):

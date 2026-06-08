@@ -28,7 +28,6 @@ from stad.utils import load_config, resolve_device, set_seed
 def _build_transform(cfg: dict) -> transforms.Compose:
     name = cfg["data"]["dataset_name"]
     # Match the training pipeline: ImageNet normalization for the timm/ViT teacher.
-    normalize = cfg.get("teacher", {}).get("kind") == "timm"
     imagenet = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     if name == "cifar10":
         return transforms.Compose([
@@ -39,12 +38,9 @@ def _build_transform(cfg: dict) -> transforms.Compose:
         ])
     if name == "mvtec":
         size = int(cfg["data"]["mvtec_img_size"])
-    else:  # mnist / fashionmnist: ViT teacher needs a real resolution; VGG16 stays at 32
-        size = int(cfg["data"].get("vit_img_size", 224)) if normalize else 32
-    steps: list = [transforms.Resize((size, size)), transforms.ToTensor()]
-    if normalize:
-        steps.append(imagenet)
-    return transforms.Compose(steps)
+    else:  # mnist / fashionmnist: ViT teacher needs a real resolution
+        size = int(cfg["data"].get("vit_img_size", 224))
+    return transforms.Compose([transforms.Resize((size, size)), transforms.ToTensor(), imagenet])
 
 
 def _save_heatmap(student, teacher, x: torch.Tensor, layer_indices, out_size: int, path: Path) -> None:

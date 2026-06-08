@@ -1,7 +1,7 @@
 # =====================================================================
 # Student-Teacher Anomaly Detection — bigger ViT teacher benchmark
 # DINOv2 ViT-Base (768-dim, depth 12) on MNIST. Compare AUROC against the
-# ViT-Small teacher (config.yaml) and the VGG16 teacher.
+# ViT-Small teacher (config.yaml).
 # =====================================================================
 
 experiment_name: mnist_vit_base
@@ -21,16 +21,12 @@ data:
 
 # ---------- Networks ----------
 teacher:
-  kind: timm                                     # vgg16 | timm
+  kind: timm                                     # timm
   pretrained: true
   timm_model: vit_base_patch14_dinov2.lvd142m    # bigger teacher: 768-dim, depth 12, patch 14
   feature_layers: [2, 5, 8, 11]                  # ViT block indices (base is depth 12, so 0..11)
 
 student:
-  # --- vgg16 teacher (unused on this config) ---
-  equal_size: false
-  use_bias: false
-  # --- timm/ViT teacher ---
   mlp_ratio: 3.0            # student auto-matches the base teacher's 768-dim width; teacher mlp_ratio is 4.0
 
 # ---------- Training ----------
@@ -50,6 +46,4 @@ train:
 # ---------- Evaluation ----------
 eval:
   localization: false                # true → pixel-level (mvtec only)
-  localization_method: feature_dist  # feature_dist | smooth_grad | gbp | gradients
-  smooth_grad_n: 25
-  smooth_grad_sigma: 0.05
+  localization_method: feature_dist  # feature_dist
