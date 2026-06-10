@@ -15,7 +15,6 @@ warnings.filterwarnings('ignore')
 
 import argparse
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -26,9 +25,6 @@ os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 
 from stad.data import build_loaders
 from stad.eval import detection_test

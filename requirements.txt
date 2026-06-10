@@ -1,5 +1,6 @@
-# torch / torchvision are provided by the Docker base image
-# (pytorch/pytorch:2.3.0-cuda12.1). Install them manually for a non-Docker env.
+# Kept for the Docker layer cache; the canonical dependency list lives in
+# pyproject.toml (`pip install -e .`). torch / torchvision are provided by
+# the Docker base image, hence commented out here.
 # torch>=2.1
 # torchvision>=0.16
 timm>=1.0.11

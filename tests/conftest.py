@@ -1,5 +1,2 @@
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+# The stad package is importable either via `pip install -e .` or because
+# pytest adds the project root to sys.path (tests/ is a package).

@@ -24,14 +24,16 @@ Student-Teacher-Anomaly-Detection-V2/
 │   │   ├── detection.py         # image-level AUROC
 │   │   ├── localization.py      # feature-distance heatmaps
 │   │   └── metrics.py           # AUROC, Youden's J, PRO
-│   └── utils/                   # config, device, logging, seed
-├── scripts/
-│   ├── train.py                 # CLI training loop with TensorBoard
-│   ├── test.py                  # detection / localization eval
-│   ├── score.py                 # single-image inference
-│   ├── cache_teacher.py         # pre-compute teacher features
-│   └── baseline_patchcore.py    # optional PatchCore baseline (anomalib)
+│   ├── utils/                   # config, device, logging, seed
+│   └── cli/                     # command-line entry points
+│       ├── train.py             # training loop with TensorBoard (stad-train)
+│       ├── test.py              # detection / localization eval (stad-test)
+│       ├── score.py             # single-image inference (stad-score)
+│       ├── cache_teacher.py     # pre-compute teacher features (stad-cache-teacher)
+│       └── baseline_patchcore.py# optional PatchCore baseline (stad-patchcore)
+├── scripts/                     # thin back-compat wrappers around stad.cli
 ├── tests/                       # pytest smoke tests
+├── pyproject.toml               # packaging + console entry points
 ├── Dockerfile
 ├── requirements.txt
 └── .gitignore
@@ -40,27 +42,34 @@ Student-Teacher-Anomaly-Detection-V2/
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
+# Editable install: pulls the deps and registers the stad-* commands.
+# (torch/torchvision come with it; in Docker they ship with the base image.)
+pip install -e .
 
 # Train on MNIST (one-class anomaly: normal_class=3)
-python scripts/train.py --config configs/config.yaml
+stad-train --config configs/config.yaml
 
 # Evaluate the best checkpoint
-python scripts/test.py --config configs/config.yaml
+stad-test --config configs/config.yaml
 
 # Score a single image
-python scripts/score.py --config configs/config.yaml --image path/to/img.png \
-                       --heatmap heatmap.png
+stad-score --config configs/config.yaml --image path/to/img.png \
+           --heatmap heatmap.png
 
 # MVTec with DINOv2 teacher
-python scripts/train.py --config configs/mvtec_capsule_dino.yaml
+stad-train --config configs/mvtec_capsule_dino.yaml
 
 # Optional: PatchCore baseline on the same MVTec category (needs `pip install anomalib`)
-python scripts/baseline_patchcore.py --config configs/config.yaml
+stad-patchcore --config configs/config.yaml
 
 # Run tests
-pytest tests/
+pip install -e '.[dev]' && pytest tests/
 ```
+
+Every command is also runnable without installing, from the project root:
+`python -m stad.cli.train --config configs/config.yaml` (same for `test`,
+`score`, `cache_teacher`, `baseline_patchcore`). The old `python
+scripts/train.py` paths still work as thin wrappers.
 
 ## Configuration cheatsheet
 
@@ -94,16 +103,16 @@ threshold can be picked via Youden's J in `stad.eval.metrics.pick_threshold_youd
 
 ## Baseline comparison (optional)
 
-`scripts/baseline_patchcore.py` runs [anomalib](https://github.com/open-edge-platform/anomalib)'s
+`stad-patchcore` runs [anomalib](https://github.com/open-edge-platform/anomalib)'s
 PatchCore on the same MVTec category and data root as your config, so its
-image/pixel AUROC is directly comparable with `scripts/test.py` output.
+image/pixel AUROC is directly comparable with `stad-test` output.
 anomalib is intentionally **not** in `requirements.txt` (it pulls in
 lightning and friends) — install it only if you want the comparison:
 
 ```bash
-pip install anomalib
-python scripts/baseline_patchcore.py --config configs/config.yaml          # category from config
-python scripts/baseline_patchcore.py --config configs/config.yaml --category hazelnut
+pip install anomalib            # or: pip install -e '.[baselines]'
+stad-patchcore --config configs/config.yaml          # category from config
+stad-patchcore --config configs/config.yaml --category hazelnut
 ```
 
 Results and logs land in `outputs/patchcore_<category>/`.

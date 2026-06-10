@@ -3,15 +3,15 @@
 PatchCore is a strong memory-bank baseline for MVTec anomaly detection. This
 script trains/evaluates it on the same MVTec category and data root as the
 given config, so its image/pixel AUROC can be compared directly with
-`scripts/test.py` results.
+`stad-test` results.
 
 anomalib is an *optional* dependency (it pulls in lightning and friends):
 
     pip install anomalib
 
 Usage:
-    python scripts/baseline_patchcore.py --config configs/config.yaml
-    python scripts/baseline_patchcore.py --config configs/config.yaml --category hazelnut
+    stad-patchcore --config configs/config.yaml
+    stad-patchcore --config configs/config.yaml --category hazelnut
 """
 
 from __future__ import annotations
@@ -20,9 +20,6 @@ import argparse
 import inspect
 import sys
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 
 from stad.utils import load_config, set_seed, setup_logger
 
@@ -112,8 +109,7 @@ def main() -> None:
     for res in results:
         for key, value in sorted(res.items()):
             log.info(f"  {key} = {value:.4f}" if isinstance(value, float) else f"  {key} = {value}")
-    log.info("Compare with the student-teacher model via: python scripts/test.py --config "
-             f"{args.config}")
+    log.info(f"Compare with the student-teacher model via: stad-test --config {args.config}")
 
 
 if __name__ == "__main__":

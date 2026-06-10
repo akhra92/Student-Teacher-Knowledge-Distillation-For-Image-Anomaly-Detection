@@ -55,19 +55,19 @@ docker_build() {
     docker build -t "$IMAGE" .
 }
 
-# Run a python script inside the container with the GPU and host data/outputs.
+# Run a stad CLI module inside the container with the GPU and host data/outputs.
 docker_run() {
-    local script="$1"; shift
+    local module="$1"; shift
     # Build the image if it doesn't exist yet.
     if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
         docker_build
     fi
-    echo ">> docker run ($IMAGE)  config=$CONFIG  script=$script  extra=${EXTRA[*]:-}"
+    echo ">> docker run ($IMAGE)  config=$CONFIG  module=$module  extra=${EXTRA[*]:-}"
     docker run --rm --gpus all \
         -v "$PWD/data:/workspace/data" \
         -v "$PWD/outputs:/workspace/outputs" \
         "$IMAGE" \
-        python "$script" --config "$CONFIG" "${EXTRA[@]}"
+        python -m "$module" --config "$CONFIG" "${EXTRA[@]}"
 }
 
 # --- Dispatch ---------------------------------------------------------
@@ -76,10 +76,10 @@ case "$MODE" in
         docker_build
         ;;
     docker-train)
-        docker_run scripts/train.py
+        docker_run stad.cli.train
         ;;
     docker-test)
-        docker_run scripts/test.py
+        docker_run stad.cli.test
         ;;
     tb)
         # Serve every experiment under outputs/ as a separate run for comparison.
@@ -90,12 +90,13 @@ case "$MODE" in
         tensorboard --logdir outputs "${EXTRA[@]}"
         ;;
     train|test)
-        # Local conda run.
+        # Local conda run. `python -m` from the project root works with or
+        # without `pip install -e .`.
         # shellcheck disable=SC1091
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate "$CONDA_ENV"
-        SCRIPT="scripts/${MODE}.py"
-        echo ">> env=$CONDA_ENV  config=$CONFIG  script=$SCRIPT  extra=${EXTRA[*]:-}"
-        python "$SCRIPT" --config "$CONFIG" "${EXTRA[@]}"
+        MODULE="stad.cli.${MODE}"
+        echo ">> env=$CONDA_ENV  config=$CONFIG  module=$MODULE  extra=${EXTRA[*]:-}"
+        python -m "$MODULE" --config "$CONFIG" "${EXTRA[@]}"
         ;;
 esac

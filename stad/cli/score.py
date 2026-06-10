@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 
 # ViT pos-embed resampling lacks some MPS kernels; fall back to CPU for those.
@@ -15,10 +14,6 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
-
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 
 from stad.eval import score_batch
 from stad.models import build_networks

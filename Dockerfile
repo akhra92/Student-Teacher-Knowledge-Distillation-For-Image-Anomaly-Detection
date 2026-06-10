@@ -15,6 +15,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
 
-ENV PYTHONPATH=/workspace
+# Deps are already installed above; this just registers the package + the
+# stad-* console commands.
+RUN pip install --no-deps -e .
 
-CMD ["python", "scripts/train.py", "--config", "configs/config.yaml"]
+CMD ["stad-train", "--config", "configs/config.yaml"]
