@@ -99,9 +99,7 @@ def main() -> None:
         f"test={len(test_loader.dataset)}"
     )
 
-    teacher, student, layer_indices = build_networks(
-        cfg, device=device, load_checkpoint=cfg["train"].get("resume"),
-    )
+    teacher, student, layer_indices = build_networks(cfg, device=device)
 
     train_cfg = cfg["train"]
     if train_cfg.get("direction_loss_only", False):
@@ -114,6 +112,31 @@ def main() -> None:
         lr=float(train_cfg["learning_rate"]),
         weight_decay=float(train_cfg.get("weight_decay", 0.0)),
     )
+
+    # ---- Resume ---------------------------------------------------------
+    # Restores the full training state (student weights, optimizer, epoch,
+    # best metric, global step). Old checkpoints without optimizer state
+    # still load — only the weights are restored then.
+    start_epoch = 0
+    best_metric = float("-inf")
+    global_step = 0
+    resume_path = train_cfg.get("resume")
+    if resume_path:
+        ckpt = torch.load(str(resume_path), map_location=device, weights_only=True)
+        if not (isinstance(ckpt, dict) and "student" in ckpt):
+            raise ValueError(f"Cannot resume from {resume_path}: no 'student' state found.")
+        student.load_state_dict(ckpt["student"])
+        if "optimizer" in ckpt:
+            optimizer.load_state_dict(ckpt["optimizer"])
+        else:
+            log.warning("Checkpoint has no optimizer state; optimizer starts fresh.")
+        start_epoch = int(ckpt.get("epoch", -1)) + 1
+        best_metric = float(ckpt.get("best_metric", best_metric))
+        global_step = int(ckpt.get("global_step", 0))
+        log.info(
+            f"Resumed from {resume_path}: continuing at epoch {start_epoch} "
+            f"(best_metric={best_metric:.4f}, global_step={global_step})"
+        )
     # ---- Optional teacher-feature cache --------------------------------
     cached_train: list[list[torch.Tensor]] | None = None
     if bool(train_cfg.get("cache_teacher", False)):
@@ -138,10 +161,8 @@ def main() -> None:
     # contains anomalies) we select on it; otherwise (e.g. MVTec, whose val is
     # normal-only) we fall back to negative val loss so a best checkpoint is
     # still saved.
-    best_metric = float("-inf")
-    global_step = 0
 
-    for epoch in range(num_epochs + 1):
+    for epoch in range(start_epoch, num_epochs + 1):
         student.train()
         epoch_loss = 0.0
         n_batches = 0
@@ -209,8 +230,11 @@ def main() -> None:
                 best_metric = metric
                 torch.save({
                     "student": student.state_dict(),
+                    "optimizer": optimizer.state_dict(),
                     "config": cfg,
                     "epoch": epoch,
+                    "best_metric": best_metric,
+                    "global_step": global_step,
                     "val_auroc": auroc,
                     "val_loss": val_loss,
                 }, ckpt_dir / "best.pth")
@@ -220,8 +244,11 @@ def main() -> None:
         if epoch % ckpt_every == 0 and epoch > 0:
             torch.save({
                 "student": student.state_dict(),
+                "optimizer": optimizer.state_dict(),
                 "config": cfg,
                 "epoch": epoch,
+                "best_metric": best_metric,
+                "global_step": global_step,
             }, ckpt_dir / f"epoch_{epoch}.pth")
 
     log.info(f"Training done. Best val metric (auroc or -loss): {best_metric:.4f}")
