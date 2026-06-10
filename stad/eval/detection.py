@@ -8,16 +8,23 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
 
 from .metrics import roc_auc
 
-# MVTec ImageFolder assigns "good" the index of its alphabetical position.
-_MVTEC_GOOD_IDX: dict[str, int] = {
-    "bottle": 3, "cable": 5, "capsule": 2, "carpet": 2, "grid": 3,
-    "hazelnut": 2, "leather": 4, "metal_nut": 3, "pill": 5, "screw": 0,
-    "tile": 2, "toothbrush": 1, "transistor": 3, "wood": 2, "zipper": 4,
-}
+
+def _resolve_class_to_idx(dataset: Dataset) -> dict[str, int] | None:
+    """Unwrap Subset/ConcatDataset until a dataset exposing `class_to_idx` is found."""
+    if hasattr(dataset, "class_to_idx"):
+        return dataset.class_to_idx
+    if isinstance(dataset, Subset):
+        return _resolve_class_to_idx(dataset.dataset)
+    if isinstance(dataset, ConcatDataset):
+        for d in dataset.datasets:
+            mapping = _resolve_class_to_idx(d)
+            if mapping is not None:
+                return mapping
+    return None
 
 
 def _flat(t: torch.Tensor) -> torch.Tensor:
@@ -72,7 +79,15 @@ def detection_test(
     if dataset_name == "mvtec":
         if not isinstance(normal_class, str):
             raise ValueError("MVTec normal_class must be a category string.")
-        normal_index = _MVTEC_GOOD_IDX[normal_class]
+        # ImageFolder assigns indices alphabetically over whatever folders exist,
+        # so read the "good" index from the dataset rather than assuming it.
+        class_to_idx = _resolve_class_to_idx(loader.dataset)
+        if class_to_idx is None or "good" not in class_to_idx:
+            raise ValueError(
+                "Could not find a 'good' class in the MVTec loader's dataset; "
+                f"got class_to_idx={class_to_idx!r}."
+            )
+        normal_index = int(class_to_idx["good"])
     else:
         normal_index = int(normal_class)
 

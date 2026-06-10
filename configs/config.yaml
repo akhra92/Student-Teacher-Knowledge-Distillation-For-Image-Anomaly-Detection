@@ -2,16 +2,16 @@
 # Student-Teacher Anomaly Detection — Configuration
 # =====================================================================
 
-experiment_name: fashionmnist
+experiment_name: mvtec_bottle
 output_dir: ./outputs
 device: cuda                # auto | cuda | mps | cpu
 seed: 42
 
 # ---------- Data ----------
 data:
-  dataset_name: fashionmnist       # mnist | fashionmnist | cifar10 | mvtec
+  dataset_name: mvtec       # mnist | fashionmnist | cifar10 | mvtec
   data_root: ./data
-  normal_class: 3           # int for mnist/fmnist/cifar10; str (e.g. "capsule") for mvtec
+  normal_class: "bottle"           # int for mnist/fmnist/cifar10; str (e.g. "capsule") for mvtec
   val_fraction: 0.1         # carve val out of train (anti-leakage)
   num_workers: 4
   mvtec_img_size: 256
@@ -29,11 +29,11 @@ student:
 
 # ---------- Training ----------
 train:
-  num_epochs: 200            # mnist/fmnist:51, cifar10:201, mvtec:601
+  num_epochs: 601            # mnist/fmnist:51, cifar10:201, mvtec:601
   batch_size: 32
   learning_rate: 1.0e-3
   weight_decay: 0.0
-  lamda: 0.05               # mvtec:0.5, others:0.05
+  lamda: 0.5               # mvtec:0.5, others:0.05
   direction_loss_only: false
   cache_teacher: false      # pre-compute teacher features (memory-heavy but fast)
   resume: null              # path to checkpoint to resume from

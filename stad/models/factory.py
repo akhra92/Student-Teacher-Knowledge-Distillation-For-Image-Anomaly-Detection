@@ -63,7 +63,7 @@ def build_networks(
     student.to(device)
 
     if load_checkpoint is not None:
-        ckpt = torch.load(str(load_checkpoint), map_location=device)
+        ckpt = torch.load(str(load_checkpoint), map_location=device, weights_only=True)
         state = ckpt["student"] if isinstance(ckpt, dict) and "student" in ckpt else ckpt
         student.load_state_dict(state)
 
