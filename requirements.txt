@@ -13,3 +13,6 @@ matplotlib>=3.7
 tensorboard>=2.15
 tqdm>=4.66
 pytest>=8.0
+# Optional: PatchCore baseline (scripts/baseline_patchcore.py). Heavy — pulls
+# in lightning etc. Install manually if you want the comparison:
+# anomalib>=1.1

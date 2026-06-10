@@ -29,7 +29,8 @@ Student-Teacher-Anomaly-Detection-V2/
 │   ├── train.py                 # CLI training loop with AMP + TensorBoard
 │   ├── test.py                  # detection / localization eval
 │   ├── score.py                 # single-image inference
-│   └── cache_teacher.py         # pre-compute teacher features
+│   ├── cache_teacher.py         # pre-compute teacher features
+│   └── baseline_patchcore.py    # optional PatchCore baseline (anomalib)
 ├── tests/                       # pytest smoke tests
 ├── Dockerfile
 ├── requirements.txt
@@ -53,6 +54,9 @@ python scripts/score.py --config configs/config.yaml --image path/to/img.png \
 
 # MVTec with DINOv2 teacher
 python scripts/train.py --config configs/mvtec_capsule_dino.yaml
+
+# Optional: PatchCore baseline on the same MVTec category (needs `pip install anomalib`)
+python scripts/baseline_patchcore.py --config configs/config.yaml
 
 # Run tests
 pytest tests/
@@ -88,10 +92,26 @@ score(x) = Σ_k [1 − cos(f^s_k(x), f^t_k(x))] + λ · Σ_k MSE(f^s_k(x), f^t_k
 Higher = more anomalous. ROC-AUC is computed over the test set; an operating
 threshold can be picked via Youden's J in `stad.eval.metrics.pick_threshold_youden`.
 
+## Baseline comparison (optional)
+
+`scripts/baseline_patchcore.py` runs [anomalib](https://github.com/open-edge-platform/anomalib)'s
+PatchCore on the same MVTec category and data root as your config, so its
+image/pixel AUROC is directly comparable with `scripts/test.py` output.
+anomalib is intentionally **not** in `requirements.txt` (it pulls in
+lightning and friends) — install it only if you want the comparison:
+
+```bash
+pip install anomalib
+python scripts/baseline_patchcore.py --config configs/config.yaml          # category from config
+python scripts/baseline_patchcore.py --config configs/config.yaml --category hazelnut
+```
+
+Results and logs land in `outputs/patchcore_<category>/`.
+
 ## What's *not* included
 
-- **Baselines comparison** (PaDiM, PatchCore, EfficientAD): these would need to
-  actually be run to be meaningful and are out of scope here.
+- **Other baselines** (PaDiM, EfficientAD): these would need to actually be
+  run to be meaningful and are out of scope here.
 - **Pre-downloaded MVTec data**: the loader expects the standard MVTec-AD
   category structure under `data/mvtec/<category>/{train,test,ground_truth}/`.
 
