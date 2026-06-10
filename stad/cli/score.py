@@ -77,12 +77,22 @@ def main() -> None:
     set_seed(int(cfg.get("seed", 42)))
     device = resolve_device(cfg.get("device", "auto"))
 
-    ckpt = (
+    ckpt_path = (
         Path(args.checkpoint)
         if args.checkpoint
         else Path(cfg["output_dir"]) / cfg["experiment_name"] / "checkpoints" / "best.pth"
     )
-    teacher, student, layer_indices = build_networks(cfg, device=device, load_checkpoint=ckpt)
+    # Load the checkpoint once: student weights plus the val-calibrated
+    # operating threshold (absent in pre-threshold checkpoints, NaN when the
+    # val set had nothing to calibrate on).
+    ckpt = torch.load(str(ckpt_path), map_location="cpu", weights_only=True)
+    state = ckpt["student"] if isinstance(ckpt, dict) and "student" in ckpt else ckpt
+    threshold = ckpt.get("threshold") if isinstance(ckpt, dict) else None
+    if threshold is not None and threshold != threshold:  # NaN
+        threshold = None
+
+    teacher, student, layer_indices = build_networks(cfg, device=device)
+    student.load_state_dict(state)
     student.eval()
 
     tfm = _build_transform(cfg)
@@ -97,6 +107,12 @@ def main() -> None:
             direction_only=bool(cfg["train"].get("direction_loss_only", False)),
         ).item()
     print(f"anomaly_score: {score:.6f}")
+    if threshold is not None:
+        print(f"threshold:     {threshold:.6f}")
+        print(f"verdict:       {'ANOMALOUS' if score >= float(threshold) else 'normal'}")
+    else:
+        print("verdict:       unavailable — checkpoint has no saved threshold "
+              "(retrain to embed one)")
 
     if args.heatmap:
         out_size = (

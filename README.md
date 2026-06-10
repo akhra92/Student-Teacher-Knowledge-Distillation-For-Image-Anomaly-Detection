@@ -98,8 +98,11 @@ feature maps at layer index `k ∈ feature_layers`:
 score(x) = Σ_k [1 − cos(f^s_k(x), f^t_k(x))] + λ · Σ_k MSE(f^s_k(x), f^t_k(x))
 ```
 
-Higher = more anomalous. ROC-AUC is computed over the test set; an operating
-threshold can be picked via Youden's J in `stad.eval.metrics.pick_threshold_youden`.
+Higher = more anomalous. ROC-AUC is computed over the test set. An operating
+threshold is calibrated on the validation set at training time (Youden's J
+when the val set contains anomalies, the 99th percentile of normal scores
+otherwise) and stored in `best.pth` — `stad-score` uses it to print a
+normal/ANOMALOUS verdict next to the raw score.
 
 ## Baseline comparison (optional)
 

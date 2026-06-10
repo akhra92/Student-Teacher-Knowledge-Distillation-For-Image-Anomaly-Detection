@@ -71,6 +71,7 @@ def main() -> None:
         )
         log.info(
             f"Detection — AUROC={results['auroc']:.4f}  "
+            f"threshold={results['threshold']:.4f}  "
             f"(n_normal={results['n_normal']}, n_anom={results['n_anomaly']})"
         )
 

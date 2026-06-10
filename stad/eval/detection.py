@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
 
-from .metrics import roc_auc
+from .metrics import pick_threshold, roc_auc
 
 
 def _resolve_class_to_idx(dataset: Dataset) -> dict[str, int] | None:
@@ -107,6 +107,9 @@ def detection_test(
 
     return {
         "auroc": roc_auc(binary, scores, anomaly_label=1),
+        # Operating point for "score >= threshold → anomaly" (Youden when both
+        # classes are present, normal-score quantile otherwise).
+        "threshold": pick_threshold(binary, scores, anomaly_label=1),
         "n_normal": n_normal,
         "n_anomaly": n_anom,
         "score_min": float(scores.min()) if scores.size else float("nan"),

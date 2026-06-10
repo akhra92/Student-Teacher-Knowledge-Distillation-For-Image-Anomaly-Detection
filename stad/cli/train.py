@@ -237,9 +237,17 @@ def main() -> None:
                     "global_step": global_step,
                     "val_auroc": auroc,
                     "val_loss": val_loss,
+                    # Val-calibrated operating point, used by stad-score to
+                    # turn a raw anomaly score into a normal/anomalous verdict.
+                    "threshold": metrics["threshold"],
+                    "score_min": metrics["score_min"],
+                    "score_max": metrics["score_max"],
                 }, ckpt_dir / "best.pth")
                 tag = f"auroc={auroc:.4f}" if auroc == auroc else f"loss={val_loss:.4f}"
-                log.info(f"  → new best ({tag}) saved to {ckpt_dir/'best.pth'}")
+                log.info(
+                    f"  → new best ({tag}, threshold={metrics['threshold']:.4f}) "
+                    f"saved to {ckpt_dir/'best.pth'}"
+                )
 
         if epoch % ckpt_every == 0 and epoch > 0:
             torch.save({

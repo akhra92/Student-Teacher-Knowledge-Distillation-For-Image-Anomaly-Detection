@@ -34,6 +34,33 @@ def pick_threshold_youden(
     return float(thr[idx]), float(j[idx])
 
 
+def pick_threshold(
+    labels: np.ndarray,
+    scores: np.ndarray,
+    anomaly_label: int = 1,
+    normal_quantile: float = 0.99,
+) -> float:
+    """Operating threshold for "score >= threshold → anomaly".
+
+    With both classes present, maximizes Youden's J. With only normal samples
+    (e.g. an MVTec val split carved from normal-only train data), falls back
+    to the `normal_quantile` of the normal scores — anything scoring above
+    nearly all known-normal samples is flagged. NaN when there are no normal
+    samples to calibrate on.
+    """
+    labels = np.asarray(labels)
+    scores = np.asarray(scores, dtype=np.float64)
+    binary = (labels == anomaly_label).astype(np.int32)
+    n_anom = int(binary.sum())
+    n_normal = int(len(binary) - n_anom)
+    if n_normal == 0:
+        return float("nan")
+    if n_anom == 0:
+        return float(np.quantile(scores[binary == 0], normal_quantile))
+    thr, _ = pick_threshold_youden(binary, scores, anomaly_label=1)
+    return float(thr)
+
+
 def per_region_overlap(
     score_maps: np.ndarray,
     masks: np.ndarray,
