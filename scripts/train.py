@@ -121,7 +121,9 @@ def main() -> None:
     # ---- Optional teacher-feature cache --------------------------------
     cached_train: list[list[torch.Tensor]] | None = None
     if bool(train_cfg.get("cache_teacher", False)):
-        log.info("Caching teacher features for the train set...")
+        # build_loaders disables train shuffling in this mode so every epoch
+        # replays the exact batch order the cache is built from below.
+        log.info("Caching teacher features for the train set (shuffling disabled)...")
         cached_train = []
         teacher.eval()
         with torch.no_grad():

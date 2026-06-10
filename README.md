@@ -26,7 +26,7 @@ Student-Teacher-Anomaly-Detection-V2/
 │   │   └── metrics.py           # AUROC, Youden's J, PRO
 │   └── utils/                   # config, device, logging, seed
 ├── scripts/
-│   ├── train.py                 # CLI training loop with AMP + TensorBoard
+│   ├── train.py                 # CLI training loop with TensorBoard
 │   ├── test.py                  # detection / localization eval
 │   ├── score.py                 # single-image inference
 │   ├── cache_teacher.py         # pre-compute teacher features
@@ -76,7 +76,7 @@ pytest tests/
 | `teacher.feature_layers` | list[int] | ViT block indices to compare, `0..depth-1` (e.g. `[2,5,8,11]`). |
 | `student.mlp_ratio` | float | ViT student capacity bottleneck (teacher uses 4.0; lower = stronger anomaly signal). |
 | `train.lamda` | float | Weight on the MSE term (vs. cosine direction term). |
-| `train.cache_teacher` | bool | Cache teacher features once per epoch in memory. |
+| `train.cache_teacher` | bool | Cache teacher features in memory once, reuse every epoch (disables train shuffling so batches stay aligned). |
 | `eval.localization` | bool | Pixel-level eval (MVTec only). |
 | `eval.localization_method` | `feature_dist` | How to make heatmaps. |
 

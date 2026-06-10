@@ -37,7 +37,7 @@ train:
   weight_decay: 0.0
   lamda: 0.05               # mvtec:0.5, others:0.05
   direction_loss_only: false
-  cache_teacher: false      # pre-compute teacher features (memory-heavy but fast)
+  cache_teacher: false      # pre-compute teacher features (memory-heavy but fast; disables train shuffling)
   resume: null              # path to checkpoint to resume from
   log_every: 10
   val_every: 1              # epochs between validation runs

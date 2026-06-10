@@ -151,9 +151,14 @@ def build_loaders(
     else:
         raise ValueError(f"Unknown dataset: {name}")
 
+    # With cache_teacher the cached features are zipped against the train
+    # loader batch-by-batch, so batch order must be identical on every pass:
+    # disable shuffling. Otherwise each epoch would pair images with teacher
+    # features cached for a different permutation.
+    shuffle_train = not bool(cfg["train"].get("cache_teacher", False))
     g = torch.Generator().manual_seed(seed)
     train_loader = DataLoader(
-        train_set, batch_size=batch_size, shuffle=True,
+        train_set, batch_size=batch_size, shuffle=shuffle_train,
         num_workers=num_workers, pin_memory=True, generator=g, drop_last=False,
     )
     val_loader = DataLoader(
