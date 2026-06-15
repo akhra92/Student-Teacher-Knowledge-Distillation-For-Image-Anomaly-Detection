@@ -18,7 +18,7 @@ Student-Teacher-Anomaly-Detection-V2/
 ├── configs/
 │   ├── config.yaml              # MNIST default (DINOv2 ViT-Small teacher)
 │   ├── config_vit_base.yaml     # MNIST / DINOv2 ViT-Base teacher
-│   └── mvtec_capsule_dino.yaml  # MVTec / DINOv2 teacher
+│   └── mvtec_leather.yaml       # MVTec / DINOv2 teacher
 ├── stad/                        # importable package
 │   ├── data/dataloader.py       # train/val/test loaders, no leakage
 │   ├── models/
@@ -63,7 +63,7 @@ stad-score --config configs/config.yaml --image path/to/img.png \
            --heatmap heatmap.png
 
 # MVTec with DINOv2 teacher
-stad-train --config configs/mvtec_capsule_dino.yaml
+stad-train --config configs/mvtec_leather.yaml
 
 # Optional: PatchCore baseline on the same MVTec category (needs `pip install anomalib`)
 stad-patchcore --config configs/config.yaml
