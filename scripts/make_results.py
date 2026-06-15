@@ -45,10 +45,10 @@ JOBS = {
         "data/mvtec/cable/ground_truth/bent_wire/000_mask.png",
         "bent_wire",
     ),
-    "mvtec_capsule": (
-        "data/mvtec/capsule/test/scratch/000.png",
-        "data/mvtec/capsule/ground_truth/scratch/000_mask.png",
-        "scratch",
+    "mvtec_leather": (
+        "data/mvtec/leather/test/cut/000.png",
+        "data/mvtec/leather/ground_truth/cut/000_mask.png",
+        "cut",
     ),
 }
 

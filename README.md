@@ -108,7 +108,7 @@ ever having seen anomalies during training.
 |---|---|---|
 | bottle | broken_large | ![bottle](assets/results/mvtec_bottle.png) |
 | cable | bent_wire | ![cable](assets/results/mvtec_cable.png) |
-| capsule | scratch | ![capsule](assets/results/mvtec_capsule.png) |
+| leather | cut | ![leather](assets/results/mvtec_leather.png) |
 
 Regenerate these figures after retraining with
 `python scripts/make_results.py` (writes to `assets/results/`).
