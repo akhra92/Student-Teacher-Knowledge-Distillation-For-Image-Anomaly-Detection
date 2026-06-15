@@ -1,29 +1,21 @@
-# Student-Teacher Anomaly Detection — v2
+# Student-Teacher Anomaly Detection
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://REPLACE-ME.streamlit.app)
+PyTorch student–teacher knowledge distillation for image anomaly detection: a ViT student mimics a frozen DINOv2 teacher on normal images, flagging anomalies where they diverge. Includes per-pixel heatmaps and an interactive Streamlit demo. Trained on MNIST, FashionMNIST, CIFAR-10, and MVTec-AD.
+Modernized PyTorch implementation of the IEEE Access paper *"Extensive knowledge distillation model: an end-to-end effective anomaly detection model for real-time industrial applications"* (Rakhmonov et al., 2023).
 
-🔍 **[Try the live demo](https://REPLACE-ME.streamlit.app)** — pick a trained model, score a sample or your own image, and see the anomaly heatmap.
-
-> **Note:** replace `REPLACE-ME` above with your real Streamlit Cloud URL after deploying (the subdomain you choose at [share.streamlit.io](https://share.streamlit.io)).
-
-Modernized PyTorch implementation of the IEEE Access paper *"Extensive
-knowledge distillation model: an end-to-end effective anomaly detection model
-for real-time industrial applications"* (Rakhmonov et al., 2023). This is a
-reorganized rewrite of the original repository with the following changes.
+🔍 **[Try the live demo](https://student-teacher-knowledge-distillation.streamlit.app/)** — pick a trained model, score a sample or your own image, and see the anomaly heatmap.
 
 ## Project layout
 
 ```
 Student-Teacher-Anomaly-Detection-V2/
 ├── configs/
-│   ├── config.yaml              # MNIST default (DINOv2 ViT-Small teacher)
-│   ├── config_vit_base.yaml     # MNIST / DINOv2 ViT-Base teacher
-│   └── mvtec_leather.yaml       # MVTec / DINOv2 teacher
+│   ├── config.yaml              # Configuration file
 ├── stad/                        # importable package
 │   ├── data/dataloader.py       # train/val/test loaders, no leakage
 │   ├── models/
-│   │   ├── teacher.py           # TimmTeacher (ViT/DINOv2)
-│   │   ├── vit_student.py       # ViT cloner (for the timm/DINOv2 teacher)
+│   │   ├── teacher.py           # Teacher (DINOv2)
+│   │   ├── vit_student.py       # Student (for the timm/DINOv2 teacher)
 │   │   └── factory.py           # build_networks()
 │   ├── losses/distillation.py   # MseDirectionLoss / DirectionOnly / MseLoss
 │   ├── eval/
@@ -161,13 +153,6 @@ stad-patchcore --config configs/config.yaml --category hazelnut
 ```
 
 Results and logs land in `outputs/patchcore_<category>/`.
-
-## What's *not* included
-
-- **Other baselines** (PaDiM, EfficientAD): these would need to actually be
-  run to be meaningful and are out of scope here.
-- **Pre-downloaded MVTec data**: the loader expects the standard MVTec-AD
-  category structure under `data/mvtec/<category>/{train,test,ground_truth}/`.
 
 ## Citation
 
