@@ -96,11 +96,11 @@ ever having seen anomalies during training.
 
 ![MVTec detection results: input, detected anomaly heatmap, ground truth](assets/results/mvtec_results.png)
 
-| Category | Defect | Input · Detected · Ground truth |
+<!-- | Category | Defect | Input · Detected · Ground truth |
 |---|---|---|
 | bottle | broken_large | ![bottle](assets/results/mvtec_bottle.png) |
 | cable | bent_wire | ![cable](assets/results/mvtec_cable.png) |
-| leather | cut | ![leather](assets/results/mvtec_leather.png) |
+| leather | cut | ![leather](assets/results/mvtec_leather.png) | -->
 
 Regenerate these figures after retraining with
 `python scripts/make_results.py` (writes to `assets/results/`).
