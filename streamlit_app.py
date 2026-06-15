@@ -29,6 +29,7 @@ from stad.models import build_networks
 from stad.utils import resolve_device, set_seed
 
 OUTPUTS_DIR = Path(__file__).parent / "outputs"
+SAMPLES_DIR = Path(__file__).parent / "samples"
 
 
 # --------------------------------------------------------------------------- #
@@ -71,6 +72,17 @@ def discover_checkpoints() -> dict[str, Path]:
         return found
     for ckpt in sorted(OUTPUTS_DIR.glob("*/checkpoints/best.pth")):
         found[ckpt.parent.parent.name] = ckpt
+    return found
+
+
+def discover_samples(model_name: str) -> dict[str, Path]:
+    """Map a readable label -> bundled sample image for this model (if any)."""
+    sample_dir = SAMPLES_DIR / model_name
+    if not sample_dir.exists():
+        return {}
+    found: dict[str, Path] = {}
+    for img in sorted(sample_dir.glob("*.png")):
+        found[img.stem.replace("_", " ")] = img
     return found
 
 
@@ -190,15 +202,37 @@ with st.sidebar:
             st.slider("Threshold", 0.0, 5.0, 1.0, 0.01) if use_manual else None
         )
 
-uploaded = st.file_uploader(
-    "Upload an image", type=["png", "jpg", "jpeg", "bmp", "tif", "tiff"]
-)
+samples = discover_samples(model_name)
 
-if uploaded is None:
+# Pick the image source: a bundled sample for this model, or the user's upload.
+img: Image.Image | None = None
+source_label = ""
+if samples:
+    mode = st.radio(
+        "Image source",
+        ["Sample image", "Upload your own"],
+        horizontal=True,
+    )
+else:
+    mode = "Upload your own"
+    st.caption(f"No bundled samples for `{model_name}` — upload an image below.")
+
+if mode == "Sample image":
+    sample_label = st.selectbox("Sample image", list(samples.keys()))
+    img = Image.open(samples[sample_label]).convert("RGB")
+    source_label = f"sample · {sample_label}"
+else:
+    uploaded = st.file_uploader(
+        "Upload an image", type=["png", "jpg", "jpeg", "bmp", "tif", "tiff"]
+    )
+    if uploaded is not None:
+        img = Image.open(uploaded).convert("RGB")
+        source_label = f"upload · {uploaded.name}"
+
+if img is None:
     st.info("👆 Upload an image to score it for anomalies.")
     st.stop()
 
-img = Image.open(uploaded).convert("RGB")
 tfm = build_transform(cfg)
 x = tfm(img).unsqueeze(0).to(device)
 
@@ -216,10 +250,10 @@ overlay = overlay_heatmap(img, heat, alpha=alpha)
 col1, col2 = st.columns(2)
 with col1:
     st.subheader("Input")
-    st.image(img, use_container_width=True)
+    st.image(img, width="stretch", caption=source_label)
 with col2:
     st.subheader("Anomaly heatmap")
-    st.image(overlay, use_container_width=True)
+    st.image(overlay, width="stretch")
 
 st.markdown("### Result")
 m1, m2 = st.columns(2)

@@ -74,12 +74,14 @@ An interactive UI for scoring images against any trained checkpoint:
 streamlit run streamlit_app.py
 ```
 
-Pick a trained model from the sidebar (auto-discovered under `outputs/`),
-upload an image, and the app shows its anomaly score and a student/teacher
-divergence heatmap. Each checkpoint carries the config it was trained with, so
-the app rebuilds the matching network and preprocessing automatically. If a
-checkpoint has no calibrated decision threshold, set one in the sidebar to get a
-normal/anomalous verdict.
+Pick a trained model from the sidebar (auto-discovered under `outputs/`), then
+either score one of the **bundled sample images** for that model (a normal and a
+defective example per model, under `samples/`) or **upload your own**. The app
+shows the anomaly score and a student/teacher divergence heatmap. Each
+checkpoint carries the config it was trained with, so the app rebuilds the
+matching network and preprocessing automatically. If a checkpoint has no
+calibrated decision threshold, set one in the sidebar to get a normal/anomalous
+verdict.
 
 Every command is also runnable without installing, from the project root:
 `python -m stad.cli.train --config configs/config.yaml` (same for `test`,
