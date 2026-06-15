@@ -66,6 +66,21 @@ stad-patchcore --config configs/config.yaml
 pip install -e '.[dev]' && pytest tests/
 ```
 
+## Web app (Streamlit)
+
+An interactive UI for scoring images against any trained checkpoint:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Pick a trained model from the sidebar (auto-discovered under `outputs/`),
+upload an image, and the app shows its anomaly score and a student/teacher
+divergence heatmap. Each checkpoint carries the config it was trained with, so
+the app rebuilds the matching network and preprocessing automatically. If a
+checkpoint has no calibrated decision threshold, set one in the sidebar to get a
+normal/anomalous verdict.
+
 Every command is also runnable without installing, from the project root:
 `python -m stad.cli.train --config configs/config.yaml` (same for `test`,
 `score`, `cache_teacher`, `baseline_patchcore`). The old `python
