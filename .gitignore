@@ -8,12 +8,19 @@ venv/
 .claude
 
 # Project artifacts
-outputs/
 data/
-*.pth
 *.pt
 *.pickle
 *.ckpt
+
+# Training outputs: keep only the best.pth weights (shipped via Git LFS so the
+# app runs on a fresh clone); ignore logs, TensorBoard events, epoch snapshots.
+outputs/*
+!outputs/*/
+outputs/*/*
+!outputs/*/checkpoints/
+outputs/*/checkpoints/*
+!outputs/*/checkpoints/best.pth
 
 # Editor / OS
 .DS_Store
