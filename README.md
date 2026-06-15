@@ -88,6 +88,25 @@ Every command is also runnable without installing, from the project root:
 `score`, `cache_teacher`, `baseline_patchcore`). The old `python
 scripts/train.py` paths still work as thin wrappers.
 
+## Results
+
+Each row is a defective MVTec test image scored by its trained checkpoint:
+the **input**, the **detected anomaly** heatmap (regions where the student
+diverges from the teacher, overlaid on the input), and the dataset's pixel-level
+**ground truth**. The heatmaps light up over the true defect locations without
+ever having seen anomalies during training.
+
+![MVTec detection results: input, detected anomaly heatmap, ground truth](assets/results/mvtec_results.png)
+
+| Category | Defect | Input · Detected · Ground truth |
+|---|---|---|
+| bottle | broken_large | ![bottle](assets/results/mvtec_bottle.png) |
+| cable | bent_wire | ![cable](assets/results/mvtec_cable.png) |
+| capsule | scratch | ![capsule](assets/results/mvtec_capsule.png) |
+
+Regenerate these figures after retraining with
+`python scripts/make_results.py` (writes to `assets/results/`).
+
 ## Configuration cheatsheet
 
 | Section | Key | What it does |
