@@ -1,5 +1,11 @@
 # Student-Teacher Anomaly Detection — v2
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://REPLACE-ME.streamlit.app)
+
+🔍 **[Try the live demo](https://REPLACE-ME.streamlit.app)** — pick a trained model, score a sample or your own image, and see the anomaly heatmap.
+
+> **Note:** replace `REPLACE-ME` above with your real Streamlit Cloud URL after deploying (the subdomain you choose at [share.streamlit.io](https://share.streamlit.io)).
+
 Modernized PyTorch implementation of the IEEE Access paper *"Extensive
 knowledge distillation model: an end-to-end effective anomaly detection model
 for real-time industrial applications"* (Rakhmonov et al., 2023). This is a
