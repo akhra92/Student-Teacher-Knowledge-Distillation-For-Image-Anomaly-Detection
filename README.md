@@ -96,12 +96,6 @@ ever having seen anomalies during training.
 
 ![MVTec detection results: input, detected anomaly heatmap, ground truth](assets/results/mvtec_results.png)
 
-<!-- | Category | Defect | Input · Detected · Ground truth |
-|---|---|---|
-| bottle | broken_large | ![bottle](assets/results/mvtec_bottle.png) |
-| cable | bent_wire | ![cable](assets/results/mvtec_cable.png) |
-| leather | cut | ![leather](assets/results/mvtec_leather.png) | -->
-
 Regenerate these figures after retraining with
 `python scripts/make_results.py` (writes to `assets/results/`).
 
@@ -153,17 +147,3 @@ stad-patchcore --config configs/config.yaml --category hazelnut
 ```
 
 Results and logs land in `outputs/patchcore_<category>/`.
-
-## Citation
-
-```
-@article{rakhmonov2023extensive,
-  author  = {Rakhmonov, Akhrorjon Akhmadjon Ugli and Subramanian, Barathi
-             and Olimov, Bekhzod and Kim, Jeonghong},
-  title   = {Extensive knowledge distillation model: An end-to-end effective
-             anomaly detection model for real-time industrial applications},
-  journal = {IEEE Access},
-  year    = {2023},
-  doi     = {10.1109/ACCESS.2023.3293108}
-}
-```

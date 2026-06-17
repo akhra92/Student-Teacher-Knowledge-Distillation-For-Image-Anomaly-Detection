@@ -65,13 +65,20 @@ def output_size(cfg: dict, x: torch.Tensor) -> int:
 # --------------------------------------------------------------------------- #
 # Model discovery / loading.
 # --------------------------------------------------------------------------- #
+# Toy-dataset checkpoints whose heatmaps look noisy/uninformative in the demo.
+HIDDEN_PREFIXES = ("cifar10", "mnist", "fashionmnist")
+
+
 def discover_checkpoints() -> dict[str, Path]:
     """Map a human label -> best.pth path for every trained experiment."""
     found: dict[str, Path] = {}
     if not OUTPUTS_DIR.exists():
         return found
     for ckpt in sorted(OUTPUTS_DIR.glob("*/checkpoints/best.pth")):
-        found[ckpt.parent.parent.name] = ckpt
+        name = ckpt.parent.parent.name
+        if name.startswith(HIDDEN_PREFIXES):
+            continue
+        found[name] = ckpt
     return found
 
 
