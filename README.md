@@ -1,4 +1,4 @@
-# Student-Teacher Anomaly Detection
+# Student-Teacher Model for Image Anomaly Detection (DINOv2)
 
 PyTorch student–teacher knowledge distillation for image anomaly detection: a ViT student mimics a frozen DINOv2 teacher on normal images, flagging anomalies where they diverge. Includes per-pixel heatmaps and an interactive Streamlit demo. Trained on MNIST, FashionMNIST, CIFAR-10, and MVTec-AD.
 Modernized PyTorch implementation of the IEEE Access paper *"Extensive knowledge distillation model: an end-to-end effective anomaly detection model for real-time industrial applications"* (Rakhmonov et al., 2023).
